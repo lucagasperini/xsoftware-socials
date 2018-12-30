@@ -1,6 +1,8 @@
 <?php
 
-if (!class_exists('xs_facebook')) {
+if(!defined('ABSPATH')) exit;
+
+if (!class_exists('xs_socials_facebook')) {
 
 require_once 'api/autoload.php';
 
@@ -38,9 +40,7 @@ class xs_socials_facebook
         {
                 if($this->get_token() != false)
                         return true;
-                        
-
-
+                
                 $sig = md5("api_key=".$this->credentials['api_key'].
                 "credentials_type=passwordemail=".trim($mail)."format=JSONgenerate_machine_id=1generate_session_cookies=1locale=en_USmethod=auth.loginpassword=".trim($pass)."return_ssl_resources=0v=1.0".$this->credentials['api_secret']);
 

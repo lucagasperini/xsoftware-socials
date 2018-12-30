@@ -10,6 +10,8 @@ Text Domain: xsoftware_socials
 
 if(!defined('ABSPATH')) exit;
 
+if (!class_exists('xs_socials_plugin')) {
+
 include 'facebook/facebook.php';
 
 
@@ -50,7 +52,7 @@ class xs_socials_plugin
                 add_submenu_page( 'xsoftware', 'XSoftware Socials', 'Socials', 'manage_options', 'xsoftware_socials', array($this, 'menu_page') );
         }
         
-                public function menu_page()
+        public function menu_page()
         {
                 if ( !current_user_can( 'manage_options' ) )  {
                         wp_die( __( 'Exit!' ) );
@@ -110,7 +112,8 @@ class xs_socials_plugin
         }
         
         
-        function action_publish_post( $postid ) {
+        function action_publish_post( $postid ) 
+        {
                 // check if post status is 'publish'
                 if ( get_post_status( $postid ) != 'publish')
                         return;
@@ -139,4 +142,6 @@ class xs_socials_plugin
 }
 
 $socials_plugin = new xs_socials_plugin;
+
+}
 ?>
