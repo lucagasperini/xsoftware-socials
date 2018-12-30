@@ -131,11 +131,12 @@ class xs_socials_plugin
                 
                 if($link == 'http://localhost')
                         $link = 'xsoftware.eu';
+                else
+                        $link = get_post_permalink($postid);
                 
                 if($this->socials['facebook']['enabled'] && $this->socials['facebook']['enabled'] !== false) {
                         $fb = new xs_socials_facebook($this->socials['facebook']['token']);
                         $fb->post_add($text, $link);
-                        exit;
                 }
         }
 
