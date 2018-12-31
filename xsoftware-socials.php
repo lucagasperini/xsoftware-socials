@@ -114,11 +114,13 @@ class xs_socials_plugin
         
         function action_publish_post( $postid ) 
         {
+                if(!isset($postid))
+                        return;
                 // check if post status is 'publish'
                 if ( get_post_status( $postid ) != 'publish')
                         return;
                 
-                $post = get_post($post_id);
+                $post = get_post($postid);
                 if ($post->post_excerpt) {
                         $text = apply_filters('the_excerpt', $the_post->post_excerpt);
                 } else {
