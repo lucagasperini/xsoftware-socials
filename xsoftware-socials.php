@@ -21,6 +21,8 @@ class xs_socials_plugin
         
         private $default = array('facebook' => 
                                         array(
+                                                'mail' => '',
+                                                'pass' => '',
                                                 'token' => '',
                                                 'enabled' => false
                                         )
@@ -65,8 +67,8 @@ class xs_socials_plugin
                 
                 echo "<form action=\"options.php\" method=\"post\">";
                 
-                settings_fields('setting_socials');
-                do_settings_sections('socials');
+                settings_fields('xsoftware_socials');
+                do_settings_sections('xsoftware_socials');
                 
                 submit_button( '', 'primary', 'globals', true, NULL );
                 
@@ -76,38 +78,76 @@ class xs_socials_plugin
         
         function section_menu()
         {
-                register_setting( 'setting_socials', 'socials_accounts', array($this, 'input') );
-                add_settings_section( 'socials', 'Facebook configuration', array($this, 'show'), 'socials' );
+                register_setting( 'xsoftware_socials', 'socials_accounts', array($this, 'facebook_input') );
+                add_settings_section( 'facebook_settings', 'Facebook configuration', array($this, 'facebook_show'), 'xsoftware_socials' );
         }
+
         
-        function input($input)
+        function facebook_input($input)
         {
+                if(!$input['facebook']['enabled']) {
+                        return $input;
+                }
+                
                 $fb = new xs_socials_facebook();
                 $result = $fb->login($input['facebook']['mail'], $input['facebook']['pass']);
+                
                 if($result !== true) {
-                                echo $result;
-                                exit;
+                        echo $result;
+                        exit;
                 }
                 
                 unset($input['facebook']['mail']);
                 unset($input['facebook']['pass']);
                 unset($input['facebook']['token']);
+                
                 $new_token = $fb->get_token();
                 $input['facebook']['token'] = $new_token;
-                $input['facebook']['enabled'] = $input['facebook']['enabled'] == '1' ? true : false;
+                $input['facebook']['enabled'] = $input['facebook']['enabled'] ? true : false;
                 
                 
                 return $input;
         }
         
-        function show()
+        function facebook_show()
         {
+                $page = 'xsoftware_socials';
+                $section = 'facebook_settings';
                 
-
-                echo "<input type='email' name='socials_accounts[facebook][mail]' value=''/>";
-                echo "<input type='password' name='socials_accounts[facebook][pass]' value=''/>";
-                echo "<input type='checkbox' name='socials_accounts[facebook][enabled]' value='1' ". checked($this->socials['facebook']['enabled'], '1') .  "/>";
-                echo "<input readonly type='text' name='socials_accounts[facebook][token]' value='".$this->socials['facebook']['token']."'/>";
+                $settings = array( 'options' => $this->socials['facebook'], 'defaults' => $this->default['facebook']);
+                
+                $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[facebook][enabled]', 'compare' => true);
+                
+                add_settings_field($settings_field['field_name'], 
+                'User email:',
+                'xs_framework::create_checkbox_input',
+                $page,
+                $section,
+                $settings_field);
+                
+                $settings_field = array('name' => 'mail', 'type' => 'mail', 'field_name' => 'socials_accounts[facebook][mail]');
+                add_settings_field($settings_field['field_name'], 
+                'User email:',
+                'xs_framework::create_text_input',
+                $page,
+                $section,
+                $settings_field);
+                
+                $settings_field = array('name' => 'pass', 'type' => 'password', 'field_name' => 'socials_accounts[facebook][pass]');
+                add_settings_field($settings_field['field_name'], 
+                'User password:',
+                'xs_framework::create_text_input',
+                $page,
+                $section,
+                $settings_field);
+                
+                $settings_field = $settings + array('readonly' => true, 'name' => 'token', 'field_name' => 'socials_accounts[facebook][token]');
+                add_settings_field($settings_field['field_name'], 
+                'User token:',
+                'xs_framework::create_text_input',
+                $page,
+                $section,
+                $settings_field);
 
         }
         
