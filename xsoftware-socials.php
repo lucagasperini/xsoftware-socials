@@ -159,6 +159,9 @@ class xs_socials_plugin
                 // check if post status is 'publish'
                 if ( get_post_status( $postid ) != 'publish')
                         return;
+                $post_type = get_post_type($postid);
+                if($post_type != 'post' && $post_type != 'page')
+                        return;
                 
                 $post = get_post($postid);
                 if ($post->post_excerpt) {
