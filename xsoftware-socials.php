@@ -119,7 +119,7 @@ class xs_socials_plugin
                 $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[facebook][enabled]', 'compare' => true);
                 
                 add_settings_field($settings_field['field_name'], 
-                'User email:',
+                'Enabled:',
                 'xs_framework::create_checkbox_input',
                 $page,
                 $section,
