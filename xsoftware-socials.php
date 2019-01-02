@@ -8,12 +8,12 @@ Author URI: https://xsoftware.eu/
 Text Domain: xsoftware_socials
 */
 
-if(!defined('ABSPATH')) exit;
-
 if (!class_exists('xs_socials_plugin')) {
 
 include 'facebook/facebook.php';
+include 'twitter/twitter.php';
 
+if (!isset($_SESSION)) session_start();
 
 class xs_socials_plugin 
 {
@@ -73,6 +73,15 @@ class xs_socials_plugin
                 submit_button( '', 'primary', 'globals', true, NULL );
                 
                 echo "</form>";
+                
+                echo "<form action=\"options.php\" method=\"post\">";
+                
+                settings_fields('xsoftware_socials_twitter');
+                do_settings_sections('xsoftware_socials_twitter');
+                
+                submit_button( '', 'primary', 'globals', true, NULL );
+                
+                echo "</form>";
                 echo '</div>';
         }
         
@@ -80,8 +89,45 @@ class xs_socials_plugin
         {
                 register_setting( 'xsoftware_socials', 'socials_accounts', array($this, 'facebook_input') );
                 add_settings_section( 'facebook_settings', 'Facebook configuration', array($this, 'facebook_show'), 'xsoftware_socials' );
+                register_setting( 'xsoftware_socials_twitter', 'socials_accounts', array($this, 'twitter_input') );
+                add_settings_section( 'twitter_settings', 'Twitter configuration', array($this, 'twitter_show'), 'xsoftware_socials_twitter' );
         }
-
+        
+        function twitter_input($input)
+        {
+        
+        }
+        
+        function twitter_show()
+        {
+                $token = array();
+                if(isset($_SESSION["oauth_token"]) && isset($_SESSION["oauth_token_secret"]))
+                {
+                        $token["oauth_token"] = $_SESSION["oauth_token"];
+                        $token["oauth_token_secret"] = $_SESSION["oauth_token_secret"];
+                        unset($_SESSION["oauth_token"]);
+                        unset($_SESSION["oauth_token_secret"]);
+                }
+                
+                $twitter = new xs_socials_twitter($token);
+                
+                $oauth_verifier = filter_input(INPUT_GET, 'oauth_verifier');
+                if(!empty($oauth_verifier)) {
+                        $new_token = $twitter->verify($oauth_verifier);
+                        $twitter = new xs_socials_twitter($new_token);
+                        $statues = $twitter->post_add("hello world");
+                }
+                
+                if(WP_DEBUG == false)
+                        $callback_url = "https://localhost/wp-admin/admin.php?page=xsoftware_socials";
+                else
+                        $callback_url = "http://localhost/wp-admin/admin.php?page=xsoftware_socials";
+                        
+                $callback = $twitter->callback_url($callback_url);
+                $_SESSION['oauth_token'] = $callback['oauth_token'];
+                $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
+                echo "<a href=\"".$callback['url']."\">Login Twitter</a>";
+        }
         
         function facebook_input($input)
         {
@@ -125,7 +171,7 @@ class xs_socials_plugin
                 $section,
                 $settings_field);
                 
-                $settings_field = array('name' => 'mail', 'type' => 'mail', 'field_name' => 'socials_accounts[facebook][mail]');
+                $settings_field = array('name' => 'mail', 'type' => 'email', 'field_name' => 'socials_accounts[facebook][mail]');
                 add_settings_field($settings_field['field_name'], 
                 'User email:',
                 'xs_framework::create_text_input',
