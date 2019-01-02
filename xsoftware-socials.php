@@ -21,11 +21,16 @@ class xs_socials_plugin
         
         private $default = array('facebook' => 
                                         array(
-                                                'mail' => '',
-                                                'pass' => '',
                                                 'token' => '',
                                                 'enabled' => false
+                                        ),
+                                'twitter' =>
+                                        array(
+                                                'token' => '',
+                                                'token_secret' => '',
+                                                'enabled' => false
                                         )
+                                
                                 );
         
         
@@ -95,38 +100,73 @@ class xs_socials_plugin
         
         function twitter_input($input)
         {
-        
+                return $input + $this->socials;
         }
         
         function twitter_show()
         {
-                $token = array();
-                if(isset($_SESSION["oauth_token"]) && isset($_SESSION["oauth_token_secret"]))
-                {
+                if(isset($_SESSION["oauth_token"]) && isset($_SESSION["oauth_token_secret"]) && isset($_GET["twitter"]) && isset($_GET["oauth_verifier"])) {
+                
                         $token["oauth_token"] = $_SESSION["oauth_token"];
                         $token["oauth_token_secret"] = $_SESSION["oauth_token_secret"];
                         unset($_SESSION["oauth_token"]);
                         unset($_SESSION["oauth_token_secret"]);
-                }
                 
-                $twitter = new xs_socials_twitter($token);
-                
-                $oauth_verifier = filter_input(INPUT_GET, 'oauth_verifier');
-                if(!empty($oauth_verifier)) {
-                        $new_token = $twitter->verify($oauth_verifier);
-                        $twitter = new xs_socials_twitter($new_token);
-                        $statues = $twitter->post_add("hello world");
-                }
-                
-                if(WP_DEBUG == false)
-                        $callback_url = "https://localhost/wp-admin/admin.php?page=xsoftware_socials";
-                else
-                        $callback_url = "http://localhost/wp-admin/admin.php?page=xsoftware_socials";
                         
-                $callback = $twitter->callback_url($callback_url);
-                $_SESSION['oauth_token'] = $callback['oauth_token'];
-                $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
-                echo "<a href=\"".$callback['url']."\">Login Twitter</a>";
+                        $twitter = new xs_socials_twitter($token);
+                                
+                        $oauth_verifier = filter_input(INPUT_GET, 'oauth_verifier');
+                        if(!empty($oauth_verifier)) {
+                                $new_token = $twitter->verify($oauth_verifier);
+                                $this->socials['twitter']['token'] = $new_token["oauth_token"];
+                                $this->socials['twitter']["token_secret"] = $new_token["oauth_token_secret"];
+                                $twitter = new xs_socials_twitter($new_token);
+                        }
+                }
+                        
+                if(empty($this->socials['twitter']['token']) && empty($this->socials['twitter']['token_secret'])) {
+                
+                        $twitter = new xs_socials_twitter(array());
+
+                        if(WP_DEBUG == false)
+                                $callback_url = "https://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
+                        else
+                                $callback_url = "http://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
+                                
+                        $callback = $twitter->callback_url($callback_url);
+                        $_SESSION['oauth_token'] = $callback['oauth_token'];
+                        $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
+                        echo "<a href=\"".$callback['url']."\">Generate new token</a>";
+                }
+                
+                $page = 'xsoftware_socials_twitter';
+                $section = 'twitter_settings';
+                
+                $settings = array( 'options' => $this->socials['twitter'], 'defaults' => $this->default['twitter']);
+                
+                $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[twitter][enabled]', 'compare' => true);
+                add_settings_field($settings_field['field_name'], 
+                'Enabled:',
+                'xs_framework::create_checkbox_input',
+                $page,
+                $section,
+                $settings_field);
+                
+                $settings_field = $settings + array('name' => 'token', 'field_name' => 'socials_accounts[twitter][token]');
+                add_settings_field($settings_field['field_name'], 
+                'User token:',
+                'xs_framework::create_text_input',
+                $page,
+                $section,
+                $settings_field);
+                
+                $settings_field = $settings + array( 'name' => 'token_secret', 'field_name' => 'socials_accounts[twitter][token_secret]');
+                add_settings_field($settings_field['field_name'], 
+                'User token secret:',
+                'xs_framework::create_text_input',
+                $page,
+                $section,
+                $settings_field);
         }
         
         function facebook_input($input)
@@ -163,7 +203,6 @@ class xs_socials_plugin
                 $settings = array( 'options' => $this->socials['facebook'], 'defaults' => $this->default['facebook']);
                 
                 $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[facebook][enabled]', 'compare' => true);
-                
                 add_settings_field($settings_field['field_name'], 
                 'Enabled:',
                 'xs_framework::create_checkbox_input',
@@ -228,6 +267,13 @@ class xs_socials_plugin
                 if($this->socials['facebook']['enabled'] && $this->socials['facebook']['enabled'] !== false) {
                         $fb = new xs_socials_facebook($this->socials['facebook']['token']);
                         $fb->post_add($text, $link);
+                }
+                
+                if($this->socials['twitter']['enabled'] && $this->socials['twitter']['enabled'] !== false) {
+                        $token['oauth_token'] = $this->socials['twitter']['token'];
+                        $token['oauth_token_secret'] =  $this->socials['twitter']['token_secret'];
+                        $twitter = new xs_socials_twitter($token);
+                        $twitter->post_add($text);
                 }
         }
 
