@@ -136,7 +136,7 @@ class xs_socials_plugin
                         $callback = $twitter->callback_url($callback_url);
                         $_SESSION['oauth_token'] = $callback['oauth_token'];
                         $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
-                        echo "<a href=\"".$callback['url']."\">Generate new token</a>";
+                        echo "<a class=\"button-primary\" href=\"".$callback['url']."\">Generate new token</a>";
                 }
                 
                 $page = 'xsoftware_socials_twitter';
@@ -192,7 +192,7 @@ class xs_socials_plugin
                 $input['facebook']['enabled'] = $input['facebook']['enabled'] ? true : false;
                 
                 
-                return $input;
+                return $input + $this->socials;
         }
         
         function facebook_show()
