@@ -65,7 +65,7 @@ class xs_socials_plugin
                         wp_die( __( 'Exit!' ) );
                 }
                 
-                wp_enqueue_style('products_style', plugins_url('style/admin.css', __FILE__));
+                xs_framework::init_admin_style();
                 
                 echo '<div class="wrap">';
                 echo '<h2>Socials configuration</h2>';
