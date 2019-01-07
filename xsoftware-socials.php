@@ -132,10 +132,7 @@ class xs_socials_plugin
                 
                         $twitter = new xs_socials_twitter(array());
 
-                        if(WP_DEBUG == false)
-                                $callback_url = "https://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
-                        else
-                                $callback_url = "http://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
+                        $callback_url = "https://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
                                 
                         $callback = $twitter->callback_url($callback_url);
                         $_SESSION['oauth_token'] = $callback['oauth_token'];
