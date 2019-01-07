@@ -22,7 +22,9 @@ class xs_socials_plugin
         private $default = array('facebook' => 
                                         array(
                                                 'token' => '',
-                                                'enabled' => false
+                                                'enabled' => false,
+                                                'pass' => '',
+                                                'mail' => '',
                                         ),
                                 'twitter' =>
                                         array(
@@ -41,6 +43,8 @@ class xs_socials_plugin
                 add_action('save_post', array($this, 'action_publish_post'));
                 
                 $this->socials = get_option('socials_accounts', $this->default);
+                $this->socials += $this->default;
+                
         }
         
         function admin_menu()
@@ -92,9 +96,9 @@ class xs_socials_plugin
         
         function section_menu()
         {
-                register_setting( 'xsoftware_socials', 'socials_accounts', array($this, 'facebook_input') );
+                register_setting( 'xsoftware_socials', 'facebook', array($this, 'facebook_input') );
                 add_settings_section( 'facebook_settings', 'Facebook configuration', array($this, 'facebook_show'), 'xsoftware_socials' );
-                register_setting( 'xsoftware_socials_twitter', 'socials_accounts', array($this, 'twitter_input') );
+                register_setting( 'xsoftware_socials_twitter', 'twitter', array($this, 'twitter_input') );
                 add_settings_section( 'twitter_settings', 'Twitter configuration', array($this, 'twitter_show'), 'xsoftware_socials_twitter' );
         }
         
@@ -142,28 +146,26 @@ class xs_socials_plugin
                 $page = 'xsoftware_socials_twitter';
                 $section = 'twitter_settings';
                 
-                $settings = array( 'options' => $this->socials['twitter'], 'defaults' => $this->default['twitter']);
-                
-                $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[twitter][enabled]', 'compare' => true);
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['twitter']["enabled"], 'name' => 'enabled', 'name' => 'twitter[enabled]', 'compare' => true);
+                add_settings_field($settings_field['name'], 
                 'Enabled:',
                 'xs_framework::create_checkbox_input',
                 $page,
                 $section,
                 $settings_field);
                 
-                $settings_field = $settings + array('name' => 'token', 'field_name' => 'socials_accounts[twitter][token]');
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['twitter']["token"], 'name' => 'token', 'name' => 'twitter[token]');
+                add_settings_field($settings_field['name'], 
                 'User token:',
-                'xs_framework::create_text_input',
+                'xs_framework::create_input',
                 $page,
                 $section,
                 $settings_field);
                 
-                $settings_field = $settings + array( 'name' => 'token_secret', 'field_name' => 'socials_accounts[twitter][token_secret]');
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['twitter']["token_secret"], 'name' => 'token_secret', 'name' => 'twitter[token_secret]');
+                add_settings_field($settings_field['name'], 
                 'User token secret:',
-                'xs_framework::create_text_input',
+                'xs_framework::create_input',
                 $page,
                 $section,
                 $settings_field);
@@ -171,28 +173,28 @@ class xs_socials_plugin
         
         function facebook_input($input)
         {
-                if(!$input['facebook']['enabled']) {
+                if(!$input['enabled']) {
                         return $input;
                 }
                 
                 $fb = new xs_socials_facebook();
-                $result = $fb->login($input['facebook']['mail'], $input['facebook']['pass']);
+                $result = $fb->login($input['mail'], $input['pass']);
                 
                 if($result !== true) {
                         echo $result;
                         exit;
                 }
                 
-                unset($input['facebook']['mail']);
-                unset($input['facebook']['pass']);
-                unset($input['facebook']['token']);
+                unset($input['mail']);
+                unset($input['pass']);
+                unset($input['token']);
                 
                 $new_token = $fb->get_token();
                 $input['facebook']['token'] = $new_token;
-                $input['facebook']['enabled'] = $input['facebook']['enabled'] ? true : false;
+                $input['facebook']['enabled'] = $input['enabled'] ? true : false;
                 
-                
-                return $input + $this->socials;
+                unset($input['enabled'] );
+                return $input; /********* FIXME ************/
         }
         
         function facebook_show()
@@ -200,36 +202,34 @@ class xs_socials_plugin
                 $page = 'xsoftware_socials';
                 $section = 'facebook_settings';
                 
-                $settings = array( 'options' => $this->socials['facebook'], 'defaults' => $this->default['facebook']);
-                
-                $settings_field = $settings + array('name' => 'enabled', 'field_name' => 'socials_accounts[facebook][enabled]', 'compare' => true);
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['facebook']["enabled"], 'name' => 'facebook[enabled]', 'compare' => true);
+                add_settings_field($settings_field['name'], 
                 'Enabled:',
                 'xs_framework::create_checkbox_input',
                 $page,
                 $section,
                 $settings_field);
                 
-                $settings_field = array('name' => 'mail', 'type' => 'email', 'field_name' => 'socials_accounts[facebook][mail]');
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['facebook']["mail"], 'type' => 'email', 'name' => 'facebook[mail]');
+                add_settings_field($settings_field['name'], 
                 'User email:',
-                'xs_framework::create_text_input',
+                'xs_framework::create_input',
                 $page,
                 $section,
                 $settings_field);
                 
-                $settings_field = array('name' => 'pass', 'type' => 'password', 'field_name' => 'socials_accounts[facebook][pass]');
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['facebook']["pass"], 'type' => 'password', 'name' => 'facebook[pass]');
+                add_settings_field($settings_field['name'], 
                 'User password:',
-                'xs_framework::create_text_input',
+                'xs_framework::create_input',
                 $page,
                 $section,
                 $settings_field);
                 
-                $settings_field = $settings + array('readonly' => true, 'name' => 'token', 'field_name' => 'socials_accounts[facebook][token]');
-                add_settings_field($settings_field['field_name'], 
+                $settings_field = array('value' => $this->socials['facebook']["token"], 'readonly' => true, 'name' => 'facebook[token]');
+                add_settings_field($settings_field['name'], 
                 'User token:',
-                'xs_framework::create_text_input',
+                'xs_framework::create_input',
                 $page,
                 $section,
                 $settings_field);
