@@ -149,7 +149,7 @@ class xs_socials_plugin
                 $settings_field = array('value' => $this->socials['twitter']["enabled"], 'name' => 'enabled', 'name' => 'twitter[enabled]', 'compare' => true);
                 add_settings_field($settings_field['name'], 
                 'Enabled:',
-                'xs_framework::create_checkbox_input',
+                'xs_framework::create_input_checkbox',
                 $page,
                 $section,
                 $settings_field);
@@ -205,7 +205,7 @@ class xs_socials_plugin
                 $settings_field = array('value' => $this->socials['facebook']["enabled"], 'name' => 'facebook[enabled]', 'compare' => true);
                 add_settings_field($settings_field['name'], 
                 'Enabled:',
-                'xs_framework::create_checkbox_input',
+                'xs_framework::create_input_checkbox',
                 $page,
                 $section,
                 $settings_field);
