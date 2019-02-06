@@ -8,6 +8,8 @@ Author URI: https://xsoftware.eu/
 Text Domain: xsoftware_socials
 */
 
+if(!defined("ABSPATH")) die;
+
 if (!class_exists('xs_socials_plugin')) {
 
 include 'facebook/facebook.php';
