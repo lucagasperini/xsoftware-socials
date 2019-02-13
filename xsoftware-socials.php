@@ -123,7 +123,12 @@ class xs_socials_plugin
                         $callback = $twitter->callback_url($callback_url);
                         $_SESSION['oauth_token'] = $callback['oauth_token'];
                         $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
-                        xs_framework::create_link(array( 'class' => 'button-primary', 'href' => $callback['url'], 'text' => 'Generate new token'));
+                        xs_framework::create_link(array(
+                                'class' => 'button-primary', 
+                                'href' => $callback['url'], 
+                                'text' => 'Generate new token', 
+                                'echo' => TRUE
+                        ));
                 }
                 
                 $page = 'xsoftware_socials_twitter';
