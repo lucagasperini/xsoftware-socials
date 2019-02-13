@@ -129,7 +129,12 @@ class xs_socials_plugin
                 $page = 'xsoftware_socials_twitter';
                 $section = 'twitter_settings';
                 
-                $settings_field = array('value' => $this->socials_twitter["token"], 'name' => 'xs_twitter[token]');
+                $settings_field = array(
+                        'value' => $this->socials_twitter["token"], 
+                        'name' => 'xs_twitter[token]', 
+                        'echo' => TRUE
+                );
+                
                 add_settings_field($settings_field['name'], 
                 'User token:',
                 'xs_framework::create_input',
@@ -137,7 +142,12 @@ class xs_socials_plugin
                 $section,
                 $settings_field);
                 
-                $settings_field = array('value' => $this->socials_twitter["token_secret"], 'name' => 'xs_twitter[token_secret]');
+                $settings_field = array(
+                        'value' => $this->socials_twitter["token_secret"], 
+                        'name' => 'xs_twitter[token_secret]', 
+                        'echo' => TRUE
+                );
+                
                 add_settings_field($settings_field['name'], 
                 'User token secret:',
                 'xs_framework::create_input',
@@ -170,7 +180,12 @@ class xs_socials_plugin
                 $page = 'xsoftware_socials';
                 $section = 'facebook_settings';
                 
-                $settings_field = array('type' => 'email', 'name' => 'xs_facebook[mail]');
+                $settings_field = array(
+                        'type' => 'email', 
+                        'name' => 'xs_facebook[mail]', 
+                        'echo' => TRUE
+                );
+                
                 add_settings_field($settings_field['name'], 
                 'User email:',
                 'xs_framework::create_input',
@@ -178,7 +193,7 @@ class xs_socials_plugin
                 $section,
                 $settings_field);
                 
-                $settings_field = array('type' => 'password', 'name' => 'xs_facebook[pass]');
+                $settings_field = array('type' => 'password', 'name' => 'xs_facebook[pass]', 'echo' => TRUE);
                 add_settings_field($settings_field['name'], 
                 'User password:',
                 'xs_framework::create_input',
@@ -186,7 +201,13 @@ class xs_socials_plugin
                 $section,
                 $settings_field);
                 
-                $settings_field = array('value' => $this->socials_facebook["token"], 'readonly' => true, 'name' => 'xs_facebook[token]');
+                $settings_field = array(
+                        'value' => $this->socials_facebook["token"], 
+                        'readonly' => true,
+                        'name' => 'xs_facebook[token]', 
+                        'echo' => TRUE
+                );
+                
                 add_settings_field($settings_field['name'], 
                 'User token:',
                 'xs_framework::create_input',
