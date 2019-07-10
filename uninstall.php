@@ -2,6 +2,6 @@
 
 if(!defined("ABSPATH")) die;
 
-delete_option('socials_accounts');
+delete_option('xs_options_socials');
 
 ?>
