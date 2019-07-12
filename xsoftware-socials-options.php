@@ -97,13 +97,17 @@ class xs_socials_options
         {
                 $current = $this->options;
 
+                if(isset($input['fb']) && !empty($input['fb']))
+                        foreach($input['fb'] as $key => $value)
+                                $current['fb'][$key] = $value;
+
                 return $current;
         }
 
 
         function show_twitter()
         {
-
+/*
                 if(isset($_SESSION["oauth_token"]) && isset($_SESSION["oauth_token_secret"]) &&
 isset($_GET["twitter"]) && isset($_GET["oauth_verifier"])) {
 
@@ -172,72 +176,113 @@ empty($this->options['twr']['token_secret'])) {
                 $page,
                 $section,
                 $settings_field);
-
-        }
-/*
-        function facebook_input($input)
-        {
-                $fb = new xs_socials_facebook();
-                $result = $fb->login($input['mail'], $input['pass']); // Try to login
-
-                if($result !== true) { // Abort if can't login
-                        echo $result;
-                        exit;
-                }
-
-                unset($input['mail']); //clear all input
-                unset($input['pass']);
-                unset($input['token']);
-
-                $input['token'] = $fb->get_token(); // get new token
-
-                return $input;
-        }
 */
+        }
+
         function show_facebook()
         {
-                $page = 'xs_socials';
-                $section = 'xs_socials_section';
-
-                $settings_field = array(
-                        'type' => 'email',
-                        'name' => 'xs_facebook[mail]',
-                        'echo' => TRUE
-                );
-
-                add_settings_field($settings_field['name'],
-                'User email:',
-                'xs_framework::create_input',
-                $page,
-                $section,
-                $settings_field);
-
                 $settings_field = [
-                        'type' => 'password',
-                        'name' => 'xs_facebook[pass]',
-                        'echo'=> TRUE
+                        'value' => $this->options['fb']['appid'],
+                        'name' => 'xs_options_socials[fb][appid]',
+                        'echo' => TRUE
                 ];
 
-                add_settings_field($settings_field['name'],
-                'User password:',
-                'xs_framework::create_input',
-                $page,
-                $section,
-                $settings_field);
-
-                $settings_field = array(
-                        'value' => $this->options['fb']["token"],
-                        'readonly' => true,
-                        'name' => 'xs_facebook[token]',
-                        'echo' => TRUE
+                add_settings_field(
+                        $settings_field['name'],
+                        'App ID:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
                 );
 
-                add_settings_field($settings_field['name'],
-                'User token:',
-                'xs_framework::create_input',
-                $page,
-                $section,
-                $settings_field);
+                $settings_field = [
+                        'value' => $this->options['fb']['secret'],
+                        'name' => 'xs_options_socials[fb][secret]',
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'App Secret:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
+
+                if(empty($this->options['fb']['secret']) && empty($this->options['fb']['appid']))
+                        return;
+
+                $fb = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $helper = $fb->getRedirectLoginHelper();
+
+                if(!empty($this->options['fb']['token'])) {
+                        $accessToken = $this->options['fb']['token'];
+                } else if (isset($_GET['code']) && !empty($_GET['code'])) {
+                        $accessToken = $helper->getAccessToken();
+
+                        // The OAuth 2.0 client handler helps us manage access tokens
+                        $oAuth2Client = $fb->getOAuth2Client();
+
+                        // Get the access token metadata from /debug_token
+                        $tokenMetadata = $oAuth2Client->debugToken($accessToken);
+
+                        // Validation (these will throw FacebookSDKException's when they fail)
+                        $tokenMetadata->validateAppId($this->options['fb']['appid']);
+
+                        $tokenMetadata->validateExpiration();
+
+                        if (! $accessToken->isLongLived()) {
+                                // Exchanges a short-lived access token for a long-lived one
+                                $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
+                        }
+                }
+
+
+                if(isset($accessToken)) {
+                        $settings_field = [
+                                'value' => $accessToken,
+                                'readonly' => true,
+                                'name' => 'xs_options_socials[fb][token]',
+                                'echo' => TRUE
+                        ];
+
+                        add_settings_field($settings_field['name'],
+                        'User token:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field);
+
+                } else {
+                        $url = xs_framework::get_browser_url();
+                        $permissions = ['email'];
+                        $loginUrl = $helper->getLoginUrl(
+                                $url,
+                                $permissions
+                        );
+
+                        $settings_field = [
+                                'name' => 'link_facebook',
+                                'href' => htmlspecialchars($loginUrl),
+                                'text' => 'Log in with Facebook!',
+                                'echo' => TRUE
+                        ];
+
+                        add_settings_field($settings_field['name'],
+                        'Login facebook:',
+                        'xs_framework::create_link',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field);
+
+                }
         }
 }
 
