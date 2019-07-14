@@ -15,7 +15,7 @@ if (!class_exists('xs_socials_plugin')) :
 include 'xsoftware-socials-options.php';
 
 include 'facebook/autoload.php';
-include 'twitter/twitter.php';
+include 'twitter/autoload.php';
 
 if (!isset($_SESSION)) session_start();
 
