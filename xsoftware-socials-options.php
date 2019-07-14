@@ -8,6 +8,8 @@ class xs_socials_options
 {
         private $default = [
                 'fb' => [
+                        'appid' => '',
+                        'secret' => '',
                         'token' => ''
                 ],
                 'twr' => [
