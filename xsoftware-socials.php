@@ -45,18 +45,32 @@ class xs_socials_plugin
                 $fb = new Facebook\Facebook([
                         'app_id' => $this->options['fb']['appid'],
                         'app_secret' => $this->options['fb']['secret'],
-                        'default_graph_version' => 'v3.2',
+                        'default_graph_version' => 'v3.3',
                 ]);
-                $resp = $fb->get('/me/feed', $this->options['fb']['token']);
+
+                $resp = $fb->get(
+                        $this->fb_feed_fields([
+                                'description',
+                                'caption',
+                                'created_time',
+                                'full_picture',
+                                'is_published',
+                                'permalink_url',
+                                'width',
+                                'height',
+                                'event',
+                                'is_hidden',
+                                'from',
+                                'link',
+                                'message_tags',
+                                'status_type',
+                                'privacy'
+                        ]),
+                        $this->options['fb']['token']
+                );
                 $post_list = $resp->getGraphEdge();
                 foreach($post_list as $single) {
-                        var_dump($single->asArray());
-
-                        $likes = $single['likes'];
-                        do {
-                                echo '<p>Likes:</p>' . "\n\n";
-                                var_dump($likes->asArray());
-                        } while ($likes = $fb->next($likes));
+                        echo apply_filters('xs_socials_facebook_post', $single->asArray());
                 }
         }
 
@@ -100,6 +114,15 @@ class xs_socials_plugin
                 }
         }
 
+        function fb_feed_fields($fields)
+        {
+                $output = '/me/feed?fields=';
+                foreach($fields as $single)
+                        $output .= $single . ',';
+
+                $output = rtrim($output, ',');
+                return $output;
+        }
 }
 
 endif;
