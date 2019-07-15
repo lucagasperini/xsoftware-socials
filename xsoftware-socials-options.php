@@ -75,7 +75,7 @@ class xs_socials_options
 
         function show()
         {
-                $tab = xs_framework::create_tabs( [
+                $tab = xs_framework::create_tabs([
                         'href' => '?page=xsoftware_socials',
                         'tabs' => [
                                 'fb' => 'Facebook',
@@ -103,82 +103,75 @@ class xs_socials_options
                         foreach($input['fb'] as $key => $value)
                                 $current['fb'][$key] = $value;
 
+                if(isset($input['twr']) && !empty($input['twr']))
+                        foreach($input['twr'] as $key => $value)
+                                $current['twr'][$key] = $value;
+
                 return $current;
         }
 
 
         function show_twitter()
         {
-/*
-                if(isset($_SESSION["oauth_token"]) && isset($_SESSION["oauth_token_secret"]) &&
-isset($_GET["twitter"]) && isset($_GET["oauth_verifier"])) {
-
-                        $token["oauth_token"] = $_SESSION["oauth_token"];
-                        $token["oauth_token_secret"] = $_SESSION["oauth_token_secret"];
-                        unset($_SESSION["oauth_token"]);
-                        unset($_SESSION["oauth_token_secret"]);
-
-
-                        $twitter = new xs_socials_twitter($token);
-
-                        $oauth_verifier = filter_input(INPUT_GET, 'oauth_verifier');
-                        if(!empty($oauth_verifier)) {
-                                $new_token = $twitter->verify($oauth_verifier);
-                                $this->options['twr']['token'] = $new_token["oauth_token"];
-                                $this->options['twr']["token_secret"] =
-$new_token["oauth_token_secret"];
-                                $twitter = new xs_socials_twitter($new_token);
-                        }
-                }
-
-                if(empty($this->options['twr']['token']) &&
-empty($this->options['twr']['token_secret'])) {
-
-                        $twitter = new xs_socials_twitter(array());
-
-                        $callback_url =
-"https://localhost/wp-admin/admin.php?page=xsoftware_socials&twitter=true";
-
-                        $callback = $twitter->callback_url($callback_url);
-                        $_SESSION['oauth_token'] = $callback['oauth_token'];
-                        $_SESSION['oauth_token_secret'] = $callback['oauth_token_secret'];
-                        xs_framework::create_link(array(
-                                'class' => 'button-primary',
-                                'href' => $callback['url'],
-                                'text' => 'Generate new token',
-                                'echo' => TRUE
-                        ));
-                }
-
-                $page = 'xs_socials';
-                $section = 'xs_socials_section';
-
-                $settings_field = array(
-                        'value' => $this->options['twr']["token"],
-                        'name' => 'xs_twitter[token]',
+                $settings_field = [
+                        'value' => $this->options['twr']['api_key'],
+                        'name' => 'xs_options_socials[twr][api_key]',
                         'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Api Key:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
                 );
 
-                add_settings_field($settings_field['name'],
-                'User token:',
-                'xs_framework::create_input',
-                $page,
-                $section,
-                $settings_field);
-
-                $settings_field = array(
-                        'value' => $this->options['twr']["token_secret"],
-                        'name' => 'xs_twitter[token_secret]',
+                $settings_field = [
+                        'value' => $this->options['twr']['api_key_secret'],
+                        'name' => 'xs_options_socials[twr][api_key_secret]',
                         'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Api Key Secret:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
                 );
 
-                add_settings_field($settings_field['name'],
-                'User token secret:',
-                'xs_framework::create_input',
-                $page,
-                $section,
-                $settings_field);
-*/
+                $settings_field = [
+                        'value' => $this->options['twr']['access_token'],
+                        'name' => 'xs_options_socials[twr][access_token]',
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Access Token:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
+
+                $settings_field = [
+                        'value' => $this->options['twr']['access_token_secret'],
+                        'name' => 'xs_options_socials[twr][access_token_secret]',
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Access Token Secret:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
         }
 
         function show_facebook()
