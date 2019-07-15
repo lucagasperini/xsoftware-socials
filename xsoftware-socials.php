@@ -39,34 +39,46 @@ class xs_socials_plugin
                 );
         }
 
-        function shortcode_posts()
+        function shortcode_posts($attr)
         {
+                $a = shortcode_atts(
+                        [
+                                'page_id' => 'me',
+                                'limit' => '20',
+                        ],
+                        $attr
+                );
+
                 $output = '';
 
                 $fb = new Facebook\Facebook([
                         'app_id' => $this->options['fb']['appid'],
                         'app_secret' => $this->options['fb']['secret'],
-                        'default_graph_version' => 'v3.3',
+                        'default_graph_version' => 'v3.2',
                 ]);
 
                 $resp = $fb->get(
-                        $this->fb_feed_fields([
-                                'description',
-                                'caption',
-                                'created_time',
-                                'full_picture',
-                                'is_published',
-                                'permalink_url',
-                                'width',
-                                'height',
-                                'event',
-                                'is_hidden',
-                                'from',
-                                'link',
-                                'message_tags',
-                                'status_type',
-                                'privacy'
-                        ]),
+                        $this->fb_feed_fields(
+                                $a['page_id'],
+                                [
+                                        'description',
+                                        'caption',
+                                        'created_time',
+                                        'full_picture',
+                                        'is_published',
+                                        'permalink_url',
+                                        'width',
+                                        'height',
+                                        'event',
+                                        'is_hidden',
+                                        'from',
+                                        'link',
+                                        'message_tags',
+                                        'status_type',
+                                        'privacy'
+                                ],
+                                $a['limit']
+                        ),
                         $this->options['fb']['token']
                 );
                 $post_list = $resp->getGraphEdge();
@@ -77,13 +89,14 @@ class xs_socials_plugin
                 return $output;
         }
 
-        function fb_feed_fields($fields)
+        function fb_feed_fields($page_id, $fields, $limit)
         {
-                $output = '/me/feed?fields=';
+                $output = '/'.$page_id.'/feed?fields=';
                 foreach($fields as $single)
                         $output .= $single . ',';
 
                 $output = rtrim($output, ',');
+                $output .= '&limit='.$limit;
                 return $output;
         }
 }
