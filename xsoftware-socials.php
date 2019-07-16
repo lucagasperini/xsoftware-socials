@@ -49,6 +49,13 @@ class xs_socials_plugin
                         $attr
                 );
 
+                if(
+                        empty($this->options['fb']['appid']) ||
+                        empty($this->options['fb']['secret']) ||
+                        empty($this->options['fb']['secret'])
+                )
+                        return '';
+
                 $output = '';
 
                 $fb = new Facebook\Facebook([
