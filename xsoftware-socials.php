@@ -29,6 +29,7 @@ class xs_socials_plugin
 
                 add_action('init', [$this, 'setup']);
                 add_shortcode('xs_socials_facebook_posts', [$this,'shortcode_facebook_posts']);
+                add_shortcode('xs_socials_twitter_posts', [$this,'shortcode_twitter_posts']);
         }
 
         function setup()
@@ -37,6 +38,69 @@ class xs_socials_plugin
                         'xs_socials',
                         'xs_options_socials'
                 );
+        }
+
+        function shortcode_twitter_posts($attr)
+        {
+                $a = shortcode_atts(
+                        [
+                                'limit' => '20',
+                        ],
+                        $attr
+                );
+
+                if(
+                        empty($this->options['twr']['api_key']) ||
+                        empty($this->options['twr']['api_key_secret']) ||
+                        empty($this->options['twr']['access_token']) ||
+                        empty($this->options['twr']['access_token_secret'])
+                )
+                        return '';
+
+                $output = '';
+
+
+                $twitter = new DG\Twitter\Twitter(
+                        $this->options['twr']['api_key'],
+                        $this->options['twr']['api_key_secret'],
+                        $this->options['twr']['access_token'],
+                        $this->options['twr']['access_token_secret']
+                );
+
+                $post_list = $twitter->load(Twitter::ME);
+
+                foreach($post_list as $single) {
+                        $data = [
+                                'id' => $single->id,
+                                'description' => $single->text,
+                                'user_link' => 'https://twitter.com/'.$single->user->screen_name,
+                                'user_image' => htmlspecialchars($single->user->profile_image_url_https),
+                                'user_name' => htmlspecialchars($single->user->name),
+                                'date' => date('j.n.Y H:i', strtotime($single->created_at))
+                        ];
+                        if(!empty($single->entities->urls)){
+                                foreach($single->entities->urls as $urls) {
+                                        $tmp = array();
+                                        $tmp['url'] = $urls->url;
+                                        $tmp['expanded_url'] = $urls->expanded_url;
+                                        $tmp['display_url'] = $urls->display_url;
+
+                                        $data['urls'][] = $tmp;
+                                }
+                        }
+                        if(!empty($single->entities->media)) {
+                                foreach($single->entities->media as $media) {
+                                        $tmp = array();
+                                        $tmp['url'] = $media->media_url_https;
+                                        $tmp['type'] = $media->type;
+
+                                        $data['media'][] = $tmp;
+                                }
+                        }
+                        $output .= apply_filters('xs_socials_twitter_post', $data);
+                }
+
+                return $output;
         }
 
         function shortcode_facebook_posts($attr)
