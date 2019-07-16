@@ -28,7 +28,7 @@ class xs_socials_plugin
                 $this->options = get_option('xs_options_socials');
 
                 add_action('init', [$this, 'setup']);
-                add_shortcode('xs_socials_posts', [$this,'shortcode_posts']);
+                add_shortcode('xs_socials_facebook_posts', [$this,'shortcode_facebook_posts']);
         }
 
         function setup()
@@ -39,7 +39,7 @@ class xs_socials_plugin
                 );
         }
 
-        function shortcode_posts($attr)
+        function shortcode_facebook_posts($attr)
         {
                 $a = shortcode_atts(
                         [
@@ -63,6 +63,13 @@ class xs_socials_plugin
                         'app_secret' => $this->options['fb']['secret'],
                         'default_graph_version' => 'v3.2',
                 ]);
+
+                $resp = $fb->get(
+                        '/'.$a['page_id'].'?fields=link',
+                        $this->options['fb']['token']
+                );
+
+                $user = $resp->getGraphNode()->asArray();
 
                 $resp = $fb->get(
                         $this->fb_feed_fields(
@@ -90,7 +97,7 @@ class xs_socials_plugin
                 );
                 $post_list = $resp->getGraphEdge();
                 foreach($post_list as $single) {
-                        $output .= apply_filters('xs_socials_facebook_post', $single->asArray());
+                        $output .= apply_filters('xs_socials_facebook_post', $single->asArray(), $user);
                 }
 
                 return $output;
