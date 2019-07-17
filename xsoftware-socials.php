@@ -17,11 +17,8 @@ include 'xsoftware-socials-options.php';
 include 'facebook/autoload.php';
 include 'twitter/twitter.class.php';
 
-if (!isset($_SESSION)) session_start();
-
 class xs_socials_plugin
 {
-        private $socials = array();
 
         public function __construct()
         {

@@ -48,14 +48,14 @@ class xs_socials_options
 
                 echo '<div class="wrap">';
 
-                echo "<form action=\"options.php\" method=\"post\">";
+                echo '<form action="options.php" method="post">';
 
                 settings_fields('xs_socials_setting');
                 do_settings_sections('xs_socials');
 
                 submit_button( '', 'primary', 'globals', true, NULL );
 
-                echo "</form>";
+                echo '</form>';
 
                 echo '</div>';
         }
