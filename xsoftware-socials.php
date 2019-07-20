@@ -27,6 +27,7 @@ class xs_socials_plugin
                 add_action('init', [$this, 'setup']);
                 add_shortcode('xs_socials_facebook_posts', [$this,'shortcode_facebook_posts']);
                 add_shortcode('xs_socials_twitter_posts', [$this,'shortcode_twitter_posts']);
+                add_shortcode('xs_socials_icons', [$this,'shortcode_icons']);
         }
 
         function setup()
@@ -35,6 +36,11 @@ class xs_socials_plugin
                         'xs_socials',
                         'xs_options_socials'
                 );
+        }
+
+        function shortcode_icons($attr)
+        {
+                return apply_filters('xs_socials_icons_show', null);
         }
 
         function shortcode_twitter_posts($attr)
