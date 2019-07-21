@@ -132,7 +132,7 @@ class xs_socials_plugin
                 ]);
 
                 $resp = $fb->get(
-                        '/'.$a['page_id'].'?fields=link',
+                        '/'.$a['page_id'].'?fields=link,picture',
                         $this->options['fb']['token']
                 );
 
