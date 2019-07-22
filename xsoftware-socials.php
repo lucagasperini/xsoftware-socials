@@ -299,7 +299,6 @@ class xs_socials_plugin
                 wp_cache_delete ( 'alloptions', 'options' );
                 /* Update the option on framework and return the value */
                 $result = update_option('xs_options_socials', $options);
-                var_dump($result, $accessToken);
         }
 
 
