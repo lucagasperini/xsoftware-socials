@@ -77,14 +77,14 @@ class xs_socials_plugin
                 $post_list = $twitter->load(Twitter::ME);
 
                 foreach($post_list as $single) {
-                        $data = [
-                                'id' => $single->id,
+                        $post = [
                                 'description' => $single->text,
                                 'user_link' => 'https://twitter.com/'.$single->user->screen_name,
                                 'user_image' => htmlspecialchars($single->user->profile_image_url_https),
                                 'user_name' => htmlspecialchars($single->user->name),
-                                'date' => date('j.n.Y H:i', strtotime($single->created_at))
+                                'date' => new DateTime($single->created_at),
                         ];
+                        $post['permalink'] = $post['user_link'].'/status/'.$single->id;
                         if(!empty($single->entities->urls)){
                                 foreach($single->entities->urls as $urls) {
                                         $tmp = array();
@@ -92,7 +92,7 @@ class xs_socials_plugin
                                         $tmp['expanded_url'] = $urls->expanded_url;
                                         $tmp['display_url'] = $urls->display_url;
 
-                                        $data['urls'][] = $tmp;
+                                        $post['urls'][] = $tmp;
                                 }
                         }
                         if(!empty($single->entities->media)) {
@@ -101,10 +101,11 @@ class xs_socials_plugin
                                         $tmp['url'] = $media->media_url_https;
                                         $tmp['type'] = $media->type;
 
-                                        $data['media'][] = $tmp;
+                                        $post['media'][] = $tmp;
                                 }
+                                $post['media'] = $post['media'][0]['url'];
                         }
-                        $output .= apply_filters('xs_socials_twitter_post', $data);
+                        $output .= apply_filters('xs_socials_twitter_post', $post);
                 }
 
                 return $output;
@@ -125,7 +126,6 @@ class xs_socials_plugin
                         ! empty($this->options['fb']['secret']) &&
                         empty($this->options['fb']['token'])
                 ) {
-                        $this->instagram_call();
                         return '';
                 }
                 $output = '';
@@ -145,21 +145,31 @@ class xs_socials_plugin
                 $id_user = $id_user['instagram_business_account']['id'];
 
                 $resp = $ig->get(
-                      '/'.$id_user.'/?fields=profile_picture_url',
+                      '/'.$id_user.'/?fields=profile_picture_url,name,username',
                         $this->options['fb']['token']
                 );
 
-                $userinfo = $resp->getGraphNode()->asArray();
+                $userinfo = $resp->getGraphNode();
 
 
                 $resp = $ig->get(
-                      '/'.$id_user.'/media?fields=media_url,permalink,username,media_type,caption,timestamp',
+                      '/'.$id_user.'/media?fields=media_url,permalink,media_type,caption,timestamp'.
+                      '&limit='.$a['limit'],
                         $this->options['fb']['token']
                 );
                 $post_list = $resp->getGraphEdge();
 
                 foreach($post_list as $single) {
-                        $output .= apply_filters('xs_socials_instagram_post', $single->asArray(), $userinfo);
+                        $post = [
+                                'user_link' => 'https://www.instagram.com/'.$userinfo->getField('username'),
+                                'user_image' => $userinfo->getField('profile_picture_url'),
+                                'user_name' => $userinfo->getField('name'),
+                                'date' => new DateTime($single->getField('timestamp')),
+                                'permalink' => $single->getField('permalink'),
+                                'description' => $single->getField('caption'),
+                                'media' => $single->getField('media_url')
+                        ];
+                        $output .= apply_filters('xs_socials_instagram_post', $post);
                 }
 
                 return $output;
@@ -174,8 +184,6 @@ class xs_socials_plugin
                         ],
                         $attr
                 );
-
-                var_dump($this->options['fb']);
 
                 if(
                         ! empty($this->options['fb']['appid']) &&
@@ -194,11 +202,11 @@ class xs_socials_plugin
                 ]);
 
                 $resp = $fb->get(
-                        '/'.$a['page_id'].'?fields=link,picture',
+                        '/'.$a['page_id'].'?fields=link,picture,name',
                         $this->options['fb']['token']
                 );
 
-                $user = $resp->getGraphNode()->asArray();
+                $user = $resp->getGraphNode();
 
                 $resp = $fb->get(
                         $this->fb_feed_fields(
@@ -226,7 +234,17 @@ class xs_socials_plugin
                 );
                 $post_list = $resp->getGraphEdge();
                 foreach($post_list as $single) {
-                        $output .= apply_filters('xs_socials_facebook_post', $single->asArray(), $user);
+                        $post = [
+                                'user_link' => $user->getField('link'),
+                                'user_image' => $user->getField('picture')['url'],
+                                'user_name' => $user->getField('name'),
+                                'date' => $single->getField('created_time'),
+                                'permalink' => $single->getField('permalink_url'),
+                                'description' => $single->getField('description'),
+                                'media' => $single->getField('full_picture')
+                        ];
+
+                        $output .= apply_filters('xs_socials_facebook_post', $post);
                 }
 
                 return $output;
@@ -284,45 +302,7 @@ class xs_socials_plugin
                 var_dump($result, $accessToken);
         }
 
-        function instagram_call()
-        {
-                if (!isset($_GET['code']) || empty($_GET['code']))
-                        return;
 
-                $pars = [
-                        'client_id' => $this->options['ig']['appid'],
-                        'client_secret' => $this->options['ig']['secret'],
-                        'grant_type' => 'authorization_code',
-                        'redirect_uri' => $this->options['ig']['call'],
-                        'code' => $_GET['code']
-                ];
-
-
-                $curlSES=curl_init();
-
-                curl_setopt($curlSES,CURLOPT_URL,'https://api.instagram.com/oauth/access_token');
-                curl_setopt($curlSES,CURLOPT_RETURNTRANSFER,true);
-                curl_setopt($curlSES,CURLOPT_HEADER, false);
-                curl_setopt($curlSES, CURLOPT_POST, true);
-                curl_setopt($curlSES, CURLOPT_POSTFIELDS,$pars);
-                curl_setopt($curlSES, CURLOPT_CONNECTTIMEOUT,10);
-                curl_setopt($curlSES, CURLOPT_TIMEOUT,30);
-
-                $result = json_decode(curl_exec($curlSES));
-
-                curl_close($curlSES);
-
-                /* Get the option using wordpress API */
-                $options = get_option('xs_options_socials', array());
-
-                /* Replace the value with access token */
-                $options['ig']['token'] = $result->access_token;
-                /* Refresh the option deleting the cache */
-                wp_cache_delete ( 'alloptions', 'options' );
-                /* Update the option on framework and return the value */
-                $result = update_option('xs_options_socials', $options);
-                var_dump($result, $options['ig']);
-        }
 }
 
 endif;
