@@ -26,6 +26,7 @@ class xs_socials_plugin
 
                 add_action('init', [$this, 'setup']);
                 add_shortcode('xs_socials_facebook_posts', [$this,'shortcode_facebook_posts']);
+                add_shortcode('xs_socials_instagram_posts', [$this,'shortcode_instagram_posts']);
                 add_shortcode('xs_socials_twitter_posts', [$this,'shortcode_twitter_posts']);
                 add_shortcode('xs_socials_icons', [$this,'shortcode_icons']);
         }
@@ -52,14 +53,17 @@ class xs_socials_plugin
                         $attr
                 );
 
+
+
                 if(
                         empty($this->options['twr']['api_key']) ||
                         empty($this->options['twr']['api_key_secret']) ||
                         empty($this->options['twr']['access_token']) ||
                         empty($this->options['twr']['access_token_secret'])
-                )
+                ) {
+                        apply_filters('xs_socials_twitter_call', $_GET);
                         return '';
-
+                }
                 $output = '';
 
 
@@ -106,7 +110,7 @@ class xs_socials_plugin
                 return $output;
         }
 
-        function shortcode_facebook_posts($attr)
+        function shortcode_instagram_posts($attr)
         {
                 $a = shortcode_atts(
                         [
@@ -117,12 +121,70 @@ class xs_socials_plugin
                 );
 
                 if(
-                        empty($this->options['fb']['appid']) ||
-                        empty($this->options['fb']['secret']) ||
-                        empty($this->options['fb']['secret'])
-                )
+                        ! empty($this->options['fb']['appid']) &&
+                        ! empty($this->options['fb']['secret']) &&
+                        empty($this->options['fb']['token'])
+                ) {
+                        $this->instagram_call();
                         return '';
+                }
+                $output = '';
 
+                $ig = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $resp = $ig->get(
+                        '/'.$a['page_id'].'?fields=instagram_business_account',
+                        $this->options['fb']['token']
+                );
+
+                $id_user = $resp->getGraphNode()->asArray();
+                $id_user = $id_user['instagram_business_account']['id'];
+
+                $resp = $ig->get(
+                      '/'.$id_user.'/?fields=profile_picture_url',
+                        $this->options['fb']['token']
+                );
+
+                $userinfo = $resp->getGraphNode()->asArray();
+
+
+                $resp = $ig->get(
+                      '/'.$id_user.'/media?fields=media_url,permalink,username,media_type,caption,timestamp',
+                        $this->options['fb']['token']
+                );
+                $post_list = $resp->getGraphEdge();
+
+                foreach($post_list as $single) {
+                        $output .= apply_filters('xs_socials_instagram_post', $single->asArray(), $userinfo);
+                }
+
+                return $output;
+        }
+
+        function shortcode_facebook_posts($attr)
+        {
+                $a = shortcode_atts(
+                        [
+                                'page_id' => 'me',
+                                'limit' => '20',
+                        ],
+                        $attr
+                );
+
+                var_dump($this->options['fb']);
+
+                if(
+                        ! empty($this->options['fb']['appid']) &&
+                        ! empty($this->options['fb']['secret']) &&
+                        empty($this->options['fb']['token'])
+                ) {
+                        $this->facebook_call();
+                        return '';
+                }
                 $output = '';
 
                 $fb = new Facebook\Facebook([
@@ -179,6 +241,87 @@ class xs_socials_plugin
                 $output = rtrim($output, ',');
                 $output .= '&limit='.$limit;
                 return $output;
+        }
+
+        function facebook_call()
+        {
+                if (!isset($_GET['code']) || empty($_GET['code']))
+                        return;
+
+                $fb = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $helper = $fb->getRedirectLoginHelper();
+                $accessToken = $helper->getAccessToken();
+
+                // The OAuth 2.0 client handler helps us manage access tokens
+                $oAuth2Client = $fb->getOAuth2Client();
+
+                // Get the access token metadata from /debug_token
+                $tokenMetadata = $oAuth2Client->debugToken($accessToken);
+
+                // Validation (these will throw FacebookSDKException's when they fail)
+                $tokenMetadata->validateAppId($this->options['fb']['appid']);
+
+                $tokenMetadata->validateExpiration();
+
+                if (! $accessToken->isLongLived()) {
+                        // Exchanges a short-lived access token for a long-lived one
+                        $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
+                }
+                /* Get the option using wordpress API */
+                $options = get_option('xs_options_socials', array());
+
+                /* Replace the value with access token */
+                $options['fb']['token'] = (string) $accessToken;
+                /* Refresh the option deleting the cache */
+                wp_cache_delete ( 'alloptions', 'options' );
+                /* Update the option on framework and return the value */
+                $result = update_option('xs_options_socials', $options);
+                var_dump($result, $accessToken);
+        }
+
+        function instagram_call()
+        {
+                if (!isset($_GET['code']) || empty($_GET['code']))
+                        return;
+
+                $pars = [
+                        'client_id' => $this->options['ig']['appid'],
+                        'client_secret' => $this->options['ig']['secret'],
+                        'grant_type' => 'authorization_code',
+                        'redirect_uri' => $this->options['ig']['call'],
+                        'code' => $_GET['code']
+                ];
+
+
+                $curlSES=curl_init();
+
+                curl_setopt($curlSES,CURLOPT_URL,'https://api.instagram.com/oauth/access_token');
+                curl_setopt($curlSES,CURLOPT_RETURNTRANSFER,true);
+                curl_setopt($curlSES,CURLOPT_HEADER, false);
+                curl_setopt($curlSES, CURLOPT_POST, true);
+                curl_setopt($curlSES, CURLOPT_POSTFIELDS,$pars);
+                curl_setopt($curlSES, CURLOPT_CONNECTTIMEOUT,10);
+                curl_setopt($curlSES, CURLOPT_TIMEOUT,30);
+
+                $result = json_decode(curl_exec($curlSES));
+
+                curl_close($curlSES);
+
+                /* Get the option using wordpress API */
+                $options = get_option('xs_options_socials', array());
+
+                /* Replace the value with access token */
+                $options['ig']['token'] = $result->access_token;
+                /* Refresh the option deleting the cache */
+                wp_cache_delete ( 'alloptions', 'options' );
+                /* Update the option on framework and return the value */
+                $result = update_option('xs_options_socials', $options);
+                var_dump($result, $options['ig']);
         }
 }
 
