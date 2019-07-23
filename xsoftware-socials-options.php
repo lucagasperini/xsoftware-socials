@@ -7,6 +7,9 @@ if (!class_exists('xs_socials_options')) :
 class xs_socials_options
 {
         private $default = [
+                'main' => [
+                        'time_expired_cache' => 90
+                ],
                 'fb' => [
                         'appid' => '',
                         'secret' => '',
@@ -17,6 +20,10 @@ class xs_socials_options
                         'api_key_secret' => '',
                         'access_token' => '',
                         'access_token_secret' => ''
+                ],
+                'ig' => [
+                        'id_business_account' => '',
+                        'id_facebook_page' => '',
                 ]
         ];
 
@@ -80,19 +87,27 @@ class xs_socials_options
                 $tab = xs_framework::create_tabs([
                         'href' => '?page=xsoftware_socials',
                         'tabs' => [
+                                'main' => 'Common',
                                 'fb' => 'Facebook',
-                                'twr' => 'Twitter'
+                                'twr' => 'Twitter',
+                                'ig' => 'Instagram'
                         ],
                         'home' => 'fb',
                         'name' => 'main_tab'
                 ]);
 
                 switch($tab) {
+                        case 'main':
+                                $this->show_main();
+                                return;
                         case 'fb':
                                 $this->show_facebook();
                                 return;
                         case 'twr':
                                 $this->show_twitter();
+                                return;
+                        case 'ig':
+                                $this->show_instagram();
                                 return;
                 }
         }
@@ -109,9 +124,35 @@ class xs_socials_options
                         foreach($input['twr'] as $key => $value)
                                 $current['twr'][$key] = $value;
 
+                if(isset($input['ig']) && !empty($input['ig']))
+                        foreach($input['ig'] as $key => $value)
+                                $current['ig'][$key] = $value;
+
+                if(isset($input['main']) && !empty($input['main']))
+                        foreach($input['main'] as $key => $value)
+                                $current['main'][$key] = $value;
+
                 return $current;
         }
 
+        function show_main()
+        {
+                $settings_field = [
+                        'value' => $this->options['main']['time_expired_cache'],
+                        'name' => 'xs_options_socials[main][time_expired_cache]',
+                        'max' => 9999999999,
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Cache time live (minutes):',
+                        'xs_framework::create_input_number',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
+        }
 
         function show_twitter()
         {
@@ -277,6 +318,55 @@ class xs_socials_options
                         $settings_field['name'],
                         'Login facebook:',
                         'xs_framework::create_link',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
+        }
+
+        function show_instagram()
+        {
+                $settings_field = [
+                        'value' => $this->options['ig']['id_facebook_page'],
+                        'name' => 'xs_options_socials[ig][id_facebook_page]',
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Facebook Page ID:',
+                        'xs_framework::create_input',
+                        'xs_socials',
+                        'xs_socials_section',
+                        $settings_field
+                );
+                if(empty($this->options['ig']['id_facebook_page']))
+                        return;
+
+                $ig = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $resp = $ig->get(
+                        '/'.$this->options['ig']['id_facebook_page'].'?fields=instagram_business_account',
+                        $this->options['fb']['token']
+                );
+
+                $id_user = $resp->getGraphNode()->asArray();
+                $id_user = $id_user['instagram_business_account']['id'];
+
+                $settings_field = [
+                        'value' => $id_user,
+                        'name' => 'xs_options_socials[ig][id_business_account]',
+                        'echo' => TRUE
+                ];
+
+                add_settings_field(
+                        $settings_field['name'],
+                        'Instagram business account ID:',
+                        'xs_framework::create_input',
                         'xs_socials',
                         'xs_socials_section',
                         $settings_field

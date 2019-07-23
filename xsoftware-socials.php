@@ -85,7 +85,7 @@ class xs_socials_plugin
                                 'date' => new DateTime($single->created_at),
                         ];
                         $post['permalink'] = $post['user_link'].'/status/'.$single->id;
-                        if(!empty($single->entities->urls)){
+                        if(!empty($single->entities->urls)) {
                                 foreach($single->entities->urls as $urls) {
                                         $tmp = array();
                                         $tmp['url'] = $urls->url;
@@ -115,59 +115,52 @@ class xs_socials_plugin
         {
                 $a = shortcode_atts(
                         [
-                                'page_id' => 'me',
+                                'page_id' => '',
                                 'limit' => '20',
                         ],
                         $attr
                 );
 
                 if(
-                        ! empty($this->options['fb']['appid']) &&
-                        ! empty($this->options['fb']['secret']) &&
-                        empty($this->options['fb']['token'])
+                        empty($this->options['fb']['appid']) ||
+                        empty($this->options['fb']['secret']) ||
+                        empty($this->options['fb']['token']) ||
+                        empty($this->options['ig']['id_business_account'])
                 ) {
                         return '';
                 }
+
+                if(empty($a['page_id']))
+                        $id_user = $this->options['ig']['id_business_account'];
+                else
+                        $id_user = $a['page_id'];
+
                 $output = '';
 
-                $ig = new Facebook\Facebook([
-                        'app_id' => $this->options['fb']['appid'],
-                        'app_secret' => $this->options['fb']['secret'],
-                        'default_graph_version' => 'v3.2',
-                ]);
-
-                $resp = $ig->get(
-                        '/'.$a['page_id'].'?fields=instagram_business_account',
-                        $this->options['fb']['token']
+                $user = $this->facebook_get(
+                        '/'.$id_user.'/',
+                        ['profile_picture_url', 'username', 'name'],
+                        'instagram_user_cache',
+                        $a['limit']
                 );
 
-                $id_user = $resp->getGraphNode()->asArray();
-                $id_user = $id_user['instagram_business_account']['id'];
-
-                $resp = $ig->get(
-                      '/'.$id_user.'/?fields=profile_picture_url,name,username',
-                        $this->options['fb']['token']
+                $post_list = $this->facebook_get(
+                        '/'.$id_user.'/media',
+                        ['media_url', 'permalink', 'media_type','caption','timestamp'],
+                        'instagram_post_cache',
+                        $a['limit'],
+                        TRUE
                 );
-
-                $userinfo = $resp->getGraphNode();
-
-
-                $resp = $ig->get(
-                      '/'.$id_user.'/media?fields=media_url,permalink,media_type,caption,timestamp'.
-                      '&limit='.$a['limit'],
-                        $this->options['fb']['token']
-                );
-                $post_list = $resp->getGraphEdge();
 
                 foreach($post_list as $single) {
                         $post = [
-                                'user_link' => 'https://www.instagram.com/'.$userinfo->getField('username'),
-                                'user_image' => $userinfo->getField('profile_picture_url'),
-                                'user_name' => $userinfo->getField('name'),
-                                'date' => new DateTime($single->getField('timestamp')),
-                                'permalink' => $single->getField('permalink'),
-                                'description' => $single->getField('caption'),
-                                'media' => $single->getField('media_url')
+                                'user_link' => 'https://www.instagram.com/'.$user->username,
+                                'user_image' => $user->profile_picture_url,
+                                'user_name' => $user->name,
+                                'date' => new DateTime($single->timestamp),
+                                'permalink' => $single->permalink,
+                                'description' => $single->caption,
+                                'media' => $single->media_url
                         ];
                         $output .= apply_filters('xs_socials_instagram_post', $post);
                 }
@@ -195,70 +188,90 @@ class xs_socials_plugin
                 }
                 $output = '';
 
+                $user = $this->facebook_get(
+                        '/'.$a['page_id'].'/',
+                        ['link', 'picture', 'name'],
+                        'facebook_user_cache',
+                        $a['limit']
+                );
+
+                $post_list = $this->facebook_get(
+                        '/'.$a['page_id'].'/feed',
+                        [
+                                'description',
+                                'caption',
+                                'created_time',
+                                'full_picture',
+                                'is_published',
+                                'permalink_url',
+                                'width',
+                                'height',
+                                'event',
+                                'is_hidden',
+                                'from',
+                                'link',
+                                'message_tags',
+                                'status_type',
+                                'privacy'
+                        ],
+                        'facebook_post_cache',
+                        $a['limit'],
+                        TRUE
+                );
+
+                $posts = array();
+
+                foreach($post_list as $single) {
+                        $tmp['user_link'] = isset($user->link) ? $user->link : '';
+                        $tmp['user_image'] = isset($user->picture->url) ? $user->picture->url : '';
+                        $tmp['user_name'] = isset($user->name) ? $user->name : '';
+                        $tmp['date'] = isset($single->created_time) ? new DateTime($single->created_time->date) : '';
+                        $tmp['permalink'] = isset($single->permalink_url) ? $single->permalink_url : '';
+                        $tmp['description'] = isset($single->description) ? $single->description : '';
+                        $tmp['media'] = isset($single->full_picture) ? $single->full_picture : '';
+
+                        $output .= apply_filters('xs_socials_facebook_post', $tmp);
+                }
+
+                return $output;
+        }
+
+        function facebook_get($endpoint, $fields, $cache_file, $limit = NULL, $is_list = FALSE)
+        {
+                $cache_min = isset($this->options['main']['time_expired_cache']) ?
+                        $this->options['main']['time_expired_cache'] :
+                        90;
+
+                if (file_exists($cache_file) && (filemtime($cache_file) > (time() - 60 * $cache_min)))
+                        return json_decode(file_get_contents($cache_file));
+
                 $fb = new Facebook\Facebook([
                         'app_id' => $this->options['fb']['appid'],
                         'app_secret' => $this->options['fb']['secret'],
                         'default_graph_version' => 'v3.2',
                 ]);
 
-                $resp = $fb->get(
-                        '/'.$a['page_id'].'?fields=link,picture,name',
-                        $this->options['fb']['token']
-                );
-
-                $user = $resp->getGraphNode();
-
-                $resp = $fb->get(
-                        $this->fb_feed_fields(
-                                $a['page_id'],
-                                [
-                                        'description',
-                                        'caption',
-                                        'created_time',
-                                        'full_picture',
-                                        'is_published',
-                                        'permalink_url',
-                                        'width',
-                                        'height',
-                                        'event',
-                                        'is_hidden',
-                                        'from',
-                                        'link',
-                                        'message_tags',
-                                        'status_type',
-                                        'privacy'
-                                ],
-                                $a['limit']
-                        ),
-                        $this->options['fb']['token']
-                );
-                $post_list = $resp->getGraphEdge();
-                foreach($post_list as $single) {
-                        $post = [
-                                'user_link' => $user->getField('link'),
-                                'user_image' => $user->getField('picture')['url'],
-                                'user_name' => $user->getField('name'),
-                                'date' => $single->getField('created_time'),
-                                'permalink' => $single->getField('permalink_url'),
-                                'description' => $single->getField('description'),
-                                'media' => $single->getField('full_picture')
-                        ];
-
-                        $output .= apply_filters('xs_socials_facebook_post', $post);
-                }
-
-                return $output;
-        }
-
-        function fb_feed_fields($page_id, $fields, $limit)
-        {
-                $output = '/'.$page_id.'/feed?fields=';
+                $endpoint .= '?fields=';
                 foreach($fields as $single)
-                        $output .= $single . ',';
+                        $endpoint .= $single . ',';
 
-                $output = rtrim($output, ',');
-                $output .= '&limit='.$limit;
-                return $output;
+                $endpoint = rtrim($endpoint, ',');
+                if(!empty($limit))
+                        $endpoint .= '&limit='.$limit;
+
+                $resp = $fb->get(
+                        $endpoint,
+                        $this->options['fb']['token']
+                );
+
+                if($is_list === FALSE)
+                        $data = $resp->getGraphNode()->asJson();
+                else
+                        $data = $resp->getGraphEdge()->asJson();
+
+                file_put_contents($cache_file, $data, LOCK_EX);
+
+                return json_decode($data);
         }
 
         function facebook_call()
