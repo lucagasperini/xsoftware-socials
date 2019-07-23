@@ -61,7 +61,6 @@ class xs_socials_plugin
                         empty($this->options['twr']['access_token']) ||
                         empty($this->options['twr']['access_token_secret'])
                 ) {
-                        apply_filters('xs_socials_twitter_call', $_GET);
                         return '';
                 }
                 $output = '';
@@ -85,7 +84,8 @@ class xs_socials_plugin
                                 'date' => new DateTime($single->created_at),
                         ];
                         $post['permalink'] = $post['user_link'].'/status/'.$single->id;
-                        if(!empty($single->entities->urls)) {
+                        /*
+                        if(!empty($single->entities->urls)){
                                 foreach($single->entities->urls as $urls) {
                                         $tmp = array();
                                         $tmp['url'] = $urls->url;
@@ -95,16 +95,13 @@ class xs_socials_plugin
                                         $post['urls'][] = $tmp;
                                 }
                         }
+                        */
                         if(!empty($single->entities->media)) {
                                 foreach($single->entities->media as $media) {
-                                        $tmp = array();
-                                        $tmp['url'] = $media->media_url_https;
-                                        $tmp['type'] = $media->type;
-
-                                        $post['media'][] = $tmp;
+                                        $post['media'][] = $media->media_url_https;
                                 }
-                                $post['media'] = $post['media'][0]['url'];
                         }
+
                         $output .= apply_filters('xs_socials_twitter_post', $post);
                 }
 
