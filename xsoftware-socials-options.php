@@ -13,7 +13,8 @@ class xs_socials_options
                 'fb' => [
                         'appid' => '',
                         'secret' => '',
-                        'token' => ''
+                        'token' => '',
+                        'call' => '',
                 ],
                 'twr' => [
                         'api_key' => '',
@@ -115,6 +116,12 @@ class xs_socials_options
         function input($input)
         {
                 $current = $this->options;
+
+                if(isset($input['fb']['remove_token']) && $input['fb']['remove_token'] === $current['fb']['token']){
+                        $input['fb']['token'] = '';
+                        unset($input['fb']['remove_token']);
+                }
+
 
                 if(isset($input['fb']) && !empty($input['fb']))
                         foreach($input['fb'] as $key => $value)
@@ -284,6 +291,21 @@ class xs_socials_options
                                 'xs_socials_section',
                                 $settings_field
                         );
+                        $settings_field = [
+                                'value' => $this->options['fb']['token'],
+                                'name' => 'xs_options_socials[fb][remove_token]',
+                                'text' => 'Remove Access Token',
+                                'echo' => TRUE
+                        ];
+
+                        add_settings_field(
+                                $settings_field['name'],
+                                'Remove Access Token:',
+                                'xs_framework::create_button',
+                                'xs_socials',
+                                'xs_socials_section',
+                                $settings_field
+                        );
                         return;
                 }
 
@@ -294,23 +316,12 @@ class xs_socials_options
                 )
                         return;
 
-                $fb = new Facebook\Facebook([
-                        'app_id' => $this->options['fb']['appid'],
-                        'app_secret' => $this->options['fb']['secret'],
-                        'default_graph_version' => 'v3.2',
-                ]);
-
-                $helper = $fb->getRedirectLoginHelper();
-
-                $permissions = ['email'];
-                $loginUrl = $helper->getLoginUrl(
-                        $this->options['fb']['call'],
-                        $permissions
-                );
+                global $xs_socials_plugin;
+                $url = $xs_socials_plugin->facebook_url($this->options['fb']['call']);
 
                 $settings_field = [
                         'name' => 'link_facebook',
-                        'href' => htmlspecialchars($loginUrl),
+                        'href' => htmlspecialchars($url),
                         'text' => 'Log in with Facebook!',
                         'echo' => TRUE
                 ];

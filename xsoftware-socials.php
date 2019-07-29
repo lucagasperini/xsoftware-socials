@@ -53,8 +53,6 @@ class xs_socials_plugin
                         $attr
                 );
 
-
-
                 if(
                         empty($this->options['twr']['api_key']) ||
                         empty($this->options['twr']['api_key_secret']) ||
@@ -180,7 +178,12 @@ class xs_socials_plugin
                         ! empty($this->options['fb']['secret']) &&
                         empty($this->options['fb']['token'])
                 ) {
-                        $this->facebook_call();
+                        /* Replace the value with access token */
+                        $this->options['fb']['token'] = $this->facebook_callback();
+                        /* Refresh the option deleting the cache */
+                        wp_cache_delete ( 'alloptions', 'options' );
+                        /* Update the option on framework and return the value */
+                        $result = update_option('xs_options_socials', $this->options);
                         return '';
                 }
                 $output = '';
@@ -271,9 +274,15 @@ class xs_socials_plugin
                 return json_decode($data);
         }
 
-        function facebook_call()
+
+        function can_facebook()
         {
-                if (!isset($_GET['code']) || empty($_GET['code']))
+                return !empty($this->options['fb']['appid']) && !empty($this->options['fb']['secret']);
+        }
+
+        function facebook_url($callback)
+        {
+                if(!$this->can_facebook())
                         return;
 
                 $fb = new Facebook\Facebook([
@@ -283,6 +292,72 @@ class xs_socials_plugin
                 ]);
 
                 $helper = $fb->getRedirectLoginHelper();
+
+                $loginUrl = $helper->getLoginUrl(
+                        htmlspecialchars($callback),
+                        ['email']
+                );
+
+                return htmlspecialchars($loginUrl);
+        }
+
+        function facebook_login($token)
+        {
+                if(!$this->can_facebook() || empty($token))
+                        return;
+
+                $fb = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $helper = $fb->getRedirectLoginHelper();
+
+                $resp = $fb->get(
+                        '/me?fields=name,email',
+                        $token
+                );
+
+                $data = $resp->getGraphNode()->asArray();
+
+                $parts = explode(' ', $data['name']);
+                if(count($parts) > 1) {
+                        $lastname = array_pop($parts);
+                        $firstname = implode(' ', $parts);
+                } else {
+                        $firstname = $name;
+                        $lastname = ' ';
+                }
+
+                $output = [
+                        'first_name' => $firstname,
+                        'last_name' => $lastname,
+                        'email' => $data['email'],
+                        'id' => $data['id']
+                ];
+
+                return $output;
+        }
+
+        function facebook_callback()
+        {
+/*
+                if(isset($_SESSION['xs_socials']['fb']['token']) && !empty($_SESSION['xs_socials']['fb']['token']))
+                        return $_SESSION['xs_socials']['fb']['token'];
+*/
+                if (!isset($_GET['code']) || empty($_GET['code']))
+                        return '';
+
+                $fb = new Facebook\Facebook([
+                        'app_id' => $this->options['fb']['appid'],
+                        'app_secret' => $this->options['fb']['secret'],
+                        'default_graph_version' => 'v3.2',
+                ]);
+
+                $helper = $fb->getRedirectLoginHelper();
+
+
                 $accessToken = $helper->getAccessToken();
 
                 // The OAuth 2.0 client handler helps us manage access tokens
@@ -300,18 +375,12 @@ class xs_socials_plugin
                         // Exchanges a short-lived access token for a long-lived one
                         $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
                 }
-                /* Get the option using wordpress API */
-                $options = get_option('xs_options_socials', array());
 
-                /* Replace the value with access token */
-                $options['fb']['token'] = (string) $accessToken;
-                /* Refresh the option deleting the cache */
-                wp_cache_delete ( 'alloptions', 'options' );
-                /* Update the option on framework and return the value */
-                $result = update_option('xs_options_socials', $options);
+                $_SESSION['xs_socials']['fb']['token'] = $accessToken;
+
+                return $accessToken;
+
         }
-
-
 }
 
 endif;
