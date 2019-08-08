@@ -383,7 +383,7 @@ class xs_socials_plugin
         }
 }
 
-endif;
-
 $xs_socials_plugin = new xs_socials_plugin;
+
+endif;
 ?>

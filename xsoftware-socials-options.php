@@ -385,8 +385,8 @@ class xs_socials_options
         }
 }
 
-endif;
-
 $xs_socials_options = new xs_socials_options;
+
+endif;
 
 ?>
