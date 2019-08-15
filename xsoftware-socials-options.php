@@ -321,7 +321,7 @@ class xs_socials_options
 
                 $settings_field = [
                         'name' => 'link_facebook',
-                        'href' => htmlspecialchars($url),
+                        'href' => $url,
                         'text' => 'Log in with Facebook!',
                         'echo' => TRUE
                 ];

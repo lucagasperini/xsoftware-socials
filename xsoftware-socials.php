@@ -293,12 +293,12 @@ class xs_socials_plugin
 
                 $helper = $fb->getRedirectLoginHelper();
 
-                $loginUrl = $helper->getLoginUrl(
+                $url = $helper->getLoginUrl(
                         htmlspecialchars($callback),
                         ['email']
                 );
 
-                return htmlspecialchars($loginUrl);
+                return $url;
         }
 
         function facebook_login($token)
@@ -355,10 +355,11 @@ class xs_socials_plugin
                         'default_graph_version' => 'v3.2',
                 ]);
 
-                $helper = $fb->getRedirectLoginHelper();
+                if (isset($_GET['state'])) {
+                        $helper->getPersistentDataHandler()->set('state', $_GET['state']);
+                }
 
-
-                $accessToken = $helper->getAccessToken();
+                $accessToken = $helper->getAccessToken($this->options['fb']['call']);
 
                 // The OAuth 2.0 client handler helps us manage access tokens
                 $oAuth2Client = $fb->getOAuth2Client();
