@@ -379,9 +379,9 @@ class xs_socials_plugin
                         $accessToken = $oAuth2Client->getLongLivedAccessToken($accessToken);
                 }
 
-                $_SESSION['xs_socials']['fb']['token'] = $accessToken;
+                $_SESSION['xs_socials']['fb']['token'] = (string) $accessToken;
 
-                return $accessToken;
+                return $_SESSION['xs_socials']['fb']['token'];
 
         }
 }
