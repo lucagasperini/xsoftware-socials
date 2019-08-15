@@ -355,6 +355,8 @@ class xs_socials_plugin
                         'default_graph_version' => 'v3.2',
                 ]);
 
+                $helper = $fb->getRedirectLoginHelper();
+
                 if (isset($_GET['state'])) {
                         $helper->getPersistentDataHandler()->set('state', $_GET['state']);
                 }
