@@ -340,7 +340,7 @@ class xs_socials_plugin
                 return $output;
         }
 
-        function facebook_callback()
+        function facebook_callback($url = '')
         {
 /*
                 if(isset($_SESSION['xs_socials']['fb']['token']) && !empty($_SESSION['xs_socials']['fb']['token']))
@@ -348,6 +348,8 @@ class xs_socials_plugin
 */
                 if (!isset($_GET['code']) || empty($_GET['code']))
                         return '';
+                if (empty($url)) 
+                	$url = $this->options['fb']['call'];
 
                 $fb = new Facebook\Facebook([
                         'app_id' => $this->options['fb']['appid'],
@@ -361,7 +363,7 @@ class xs_socials_plugin
                         $helper->getPersistentDataHandler()->set('state', $_GET['state']);
                 }
 
-                $accessToken = $helper->getAccessToken($this->options['fb']['call']);
+                $accessToken = $helper->getAccessToken($url);
 
                 // The OAuth 2.0 client handler helps us manage access tokens
                 $oAuth2Client = $fb->getOAuth2Client();
